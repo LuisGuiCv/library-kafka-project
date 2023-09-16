@@ -4,11 +4,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learnkafka.domain.LibraryEvent;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.Header;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Component
@@ -25,11 +29,13 @@ public class Producer {
         this.objectMapper=objectMapper;
     }
 
-    public void sendLibraryEvent(LibraryEvent libraryEvent) throws JsonProcessingException {
+    public CompletableFuture<SendResult<Integer, String>> sendLibraryEvent(LibraryEvent libraryEvent) throws JsonProcessingException {
         Integer key=libraryEvent.libraryEventId();
         String value=objectMapper.writeValueAsString(libraryEvent);
-        CompletableFuture<SendResult<Integer, String>> completableFuture = kafkaTemplate.send(topic, key, value);
-        completableFuture.whenComplete((sendResult,throwable)->{
+        List<Header> recordHeaders=List.of(new RecordHeader("event-source","scanner".getBytes()));
+        ProducerRecord producerRecord=new ProducerRecord<>(topic,null,key,libraryEvent);
+        CompletableFuture<SendResult<Integer, String>> completableFuture = kafkaTemplate.send(producerRecord);
+        return completableFuture.whenComplete((sendResult,throwable)->{
             if(throwable!=null){
                 handleFailure(key,value,throwable);
             }else{
