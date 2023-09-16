@@ -10,6 +10,9 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Component
 @Slf4j
@@ -25,17 +28,12 @@ public class Producer {
         this.objectMapper=objectMapper;
     }
 
-    public void sendLibraryEvent(LibraryEvent libraryEvent) throws JsonProcessingException {
+    public SendResult<Integer, String> sendLibraryEvent(LibraryEvent libraryEvent) throws JsonProcessingException, ExecutionException, InterruptedException, TimeoutException {
         Integer key=libraryEvent.libraryEventId();
         String value=objectMapper.writeValueAsString(libraryEvent);
-        CompletableFuture<SendResult<Integer, String>> completableFuture = kafkaTemplate.send(topic, key, value);
-        completableFuture.whenComplete((sendResult,throwable)->{
-            if(throwable!=null){
-                handleFailure(key,value,throwable);
-            }else{
-                handleSuccess(key,value,sendResult);
-            }
-        });
+        SendResult<Integer, String> sendResult = kafkaTemplate.send(topic, key, value).get(3, TimeUnit.SECONDS);
+        handleSuccess(key,value,sendResult);
+        return sendResult;
     }
 
     private void handleSuccess(Integer key, String value, SendResult<Integer, String> sendResult) {
