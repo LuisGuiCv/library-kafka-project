@@ -33,7 +33,7 @@ public class Producer {
         Integer key=libraryEvent.libraryEventId();
         String value=objectMapper.writeValueAsString(libraryEvent);
         List<Header> recordHeaders=List.of(new RecordHeader("event-source","scanner".getBytes()));
-        ProducerRecord producerRecord=new ProducerRecord<>(topic,null,key,libraryEvent);
+        ProducerRecord producerRecord=new ProducerRecord<>(topic,null,key,value);
         CompletableFuture<SendResult<Integer, String>> completableFuture = kafkaTemplate.send(producerRecord);
         return completableFuture.whenComplete((sendResult,throwable)->{
             if(throwable!=null){
