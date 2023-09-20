@@ -30,6 +30,7 @@ public class LibraryEventsController {
     public ResponseEntity<?> updateLibraryEvent(@RequestBody @Valid LibraryEvent libraryEvent) throws JsonProcessingException {
         ResponseEntity<String> BAD_REQUEST = validateLibraryEvent(libraryEvent);
         if (BAD_REQUEST != null) return BAD_REQUEST;
+        producer.sendLibraryEvent(libraryEvent);
         return ResponseEntity.status(HttpStatus.OK).body(libraryEvent);
     }
 
